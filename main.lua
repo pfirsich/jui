@@ -1,7 +1,19 @@
 local examples = {}
 local currentExampleIndex = 1
 
-local function runExample(example)
+local function currentExample()
+    return examples[currentExampleIndex]
+end
+
+local function selectExample(index)
+    if type(index) == "string" then
+        for i, example in ipairs(examples) do
+            if example.name == index then index = i end
+        end
+    end
+
+    currentExampleIndex = index
+    local example = currentExample()
     love.window.setTitle(example.name .. " - Use ctrl+left / ctrl+right to cycle through")
     -- use a fresh fenv every time
     example.fenv = {
@@ -21,10 +33,6 @@ local function runExample(example)
     end
 end
 
-local function currentExample()
-    return examples[currentExampleIndex]
-end
-
 function love.load()
     -- keypressed is special, because we need to intercept it and load is special, because we need to do it on load
     local callbacks = {
@@ -41,30 +49,31 @@ function love.load()
 
     local exampleFiles = love.filesystem.getDirectoryItems("examples/")
     table.sort(exampleFiles)
-    for _, file in ipairs(exampleFiles) do
+    for i, file in ipairs(exampleFiles) do
         local example = {
             name = file,
             func = love.filesystem.load("examples/" .. file),
         }
         table.insert(examples, example)
     end
-    runExample(currentExample())
+
+    selectExample("layout_linear.lua")
 end
 
 function love.keypressed(key, ...)
     local ctrl = love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")
     if ctrl and key == "left" then
-        currentExampleIndex = currentExampleIndex - 1
-        if currentExampleIndex < 1 then
-            currentExampleIndex = #examples
+        local idx = currentExampleIndex - 1
+        if idx < 1 then
+            idx = #examples
         end
-        runExample(currentExample())
+        selectExample(idx)
     elseif ctrl and key == "right" then
-        currentExampleIndex = currentExampleIndex + 1
-        if currentExampleIndex > #examples then
-            currentExampleIndex = 1
+        local idx = currentExampleIndex + 1
+        if idx > #examples then
+            idx = 1
         end
-        runExample(currentExample())
+        selectExample(idx)
     end
 
     if currentExample().fenv.love.keypressed then
