@@ -41,10 +41,15 @@ function Box:initialize(params)
     self.alignx = params.alignx or jui.alignx.left
     self.aligny = params.aligny or jui.aligny.top
     self.margin = parseLRTB(params.margin or {})
-    self.linearDirection = params.linearDirection or nil
-    self.spacing = params.spacing or jui.spacing.even
     self.padding = parseLRTB(params.padding or {})
     self.children = params.children or {}
+
+    if self.layout.layoutType == jui.layoutType.linear then
+        self.layout.direction = self.layout.direction or nil -- mandatory
+        self.layout.spacing = self.layout.spacing or jui.spacing.even
+    elseif self.layout.layoutType == jui.layoutType.grid then
+        error("Layout type 'grid' not implemented yet")
+    end
 
     for _, child in ipairs(self.children) do
         child.parent = self
@@ -169,8 +174,8 @@ local sizeLong = {
 function Box:positionChildren()
     local selfX, selfY, selfW, selfH = self._clipBox.x, self._clipBox.y,
                                        self._clipBox.w, self._clipBox.h
-    if self.linearDirection then
-        local mainAxis, dir = dirToAxis(self.linearDirection)
+    if self.layout.layoutType == jui.layoutType.linear then
+        local mainAxis, dir = dirToAxis(self.layout.direction)
 
         -- We do this to position on the cross axis only
         for _, child in ipairs(self.children) do
@@ -187,13 +192,13 @@ function Box:positionChildren()
 
         local cursor = dir > 0 and selfPos or selfPos + selfSize
         local childSpacing
-        if self.spacing == jui.spacing.between then
+        if self.layout.spacing == jui.spacing.between then
             -- for #self.children == 1, this variable is unused, so inf is fine
             childSpacing = leftOverSize / (#self.children - 1)
-        elseif self.spacing == jui.spacing.around then
+        elseif self.layout.spacing == jui.spacing.around then
             cursor = cursor + dir * leftOverSize / 2
             childSpacing = 0
-        elseif self.spacing == jui.spacing.even then
+        elseif self.layout.spacing == jui.spacing.even then
             childSpacing = leftOverSize / (#self.children + 1)
             cursor = cursor + dir * childSpacing
         end
@@ -253,17 +258,16 @@ local function isParentDetermined(size)
 end
 
 function Box:getChildrenSizeAxis(axis, includeFillChildren)
-    if self.layout == jui.layout.direct then
+    if self.layout.layoutType == jui.layoutType.direct then
         assert(false, "Not Implemented: boxes with dynamic size ('fill', 'fit') and layout 'direct'")
         for _, child in ipairs(self.children) do
             child:calculateSizeAxis(axis)
         end
         -- TODO: Find the biggest box that can fit all children!
-        assert(self.linearDirection or (type(self.width) == "number" and type(self.height) == "number"))
         return self.width, self.height
-    elseif self.layout == jui.layout.linear then
+    elseif self.layout.layoutType == jui.layoutType.linear then
         local childrenSizeMain, childrenSizeCross = 0, 0
-        local mainAxis, dir = dirToAxis(self.linearDirection)
+        local mainAxis, dir = dirToAxis(self.layout.direction)
         if axis == mainAxis then
             local childrenSizeMain = 0
 
@@ -305,7 +309,7 @@ function Box:getChildrenSizeAxis(axis, includeFillChildren)
 
             return childrenSizeCross
         end
-    elseif self.layout == jui.layout.grid then
+    elseif self.layout.layoutType == jui.layoutType.grid then
         assert(false, "Not Implemented: layout 'grid'")
     end
 end

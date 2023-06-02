@@ -29,4 +29,11 @@ function util.round(x)
     return math.floor(x + 0.5)
 end
 
+function util.addValueWrapper(key, value)
+    return function(tbl)
+        tbl[key] = value
+        return tbl
+    end
+end
+
 return util

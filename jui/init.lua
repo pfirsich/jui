@@ -22,7 +22,12 @@ jui.size = {
     fill = util.unit("fill"),
 }
 jui.spacing = util.enum("around", "between", "even")
-jui.layout = util.enum("direct", "linear", "grid")
+jui.layoutType = util.enum("direct", "linear", "grid")
+jui.layout = {
+    direct = {layoutType = "direct"},
+    linear = util.addValueWrapper("layoutType", "linear"),
+    grid = util.addValueWrapper("layoutType", "grid"),
+}
 
 jui.pct = util.unit("pct")
 jui.px = function(v) return v end

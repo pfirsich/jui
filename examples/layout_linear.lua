@@ -12,8 +12,7 @@ local menu = jui.Box {
             aligny = jui.aligny.top,
             height = 120,
             margin = 20,
-            layout = jui.layout.linear,
-            linearDirection = jui.direction.right,
+            layout = jui.layout.linear { direction = jui.direction.right },
             children = {
                 jui.Box { id = "New Game", width = 200, height = 50, margin = 10, aligny = jui.aligny.top },
                 jui.Box { id = "Continue", width = 200, height = 50, margin = 10, aligny = jui.aligny.center },
@@ -26,9 +25,7 @@ local menu = jui.Box {
             aligny = jui.aligny.bottom,
             width = jui.pct(70),
             margin = { bottom = 260 },
-            layout = jui.layout.linear,
-            linearDirection = jui.direction.left,
-            spacing = jui.spacing.even,
+            layout = jui.layout.linear { direction = jui.direction.left, spacing = jui.spacing.even },
             children = {
                 jui.Box { id = "New Game", width = jui.size.fill(2), height = 50, margin = 10 },
                 jui.Box { id = "Continue", width = jui.size.fill, height = 50, margin = 10 },
@@ -41,9 +38,7 @@ local menu = jui.Box {
             aligny = jui.aligny.bottom,
             width = jui.pct(70),
             margin = { bottom = 180 },
-            layout = jui.layout.linear,
-            linearDirection = jui.direction.left,
-            spacing = jui.spacing.even,
+            layout = jui.layout.linear { direction = jui.direction.left, spacing = jui.spacing.even },
             children = {
                 jui.Box { id = "New Game", width = 200, height = 50, margin = 10 },
                 jui.Box { id = "Continue", width = 200, height = 50, margin = 10 },
@@ -56,9 +51,7 @@ local menu = jui.Box {
             aligny = jui.aligny.bottom,
             width = 800,
             margin = { bottom = 100 },
-            layout = jui.layout.linear,
-            linearDirection = jui.direction.left,
-            spacing = jui.spacing.around,
+            layout = jui.layout.linear { direction = jui.direction.left, spacing = jui.spacing.around },
             children = {
                 jui.Box { id = "New Game", width = 200, height = 50, margin = 10 },
                 jui.Box { id = "Continue", width = 200, height = 50, margin = 10 },
@@ -71,9 +64,7 @@ local menu = jui.Box {
             aligny = jui.aligny.bottom,
             width = 800,
             margin = { bottom = 20 },
-            layout = jui.layout.linear,
-            linearDirection = jui.direction.left,
-            spacing = jui.spacing.between,
+            layout = jui.layout.linear { direction = jui.direction.left, spacing = jui.spacing.between },
             children = {
                 jui.Box { id = "New Game", width = 200, height = 50, margin = 10 },
                 jui.Box { id = "Continue", width = 200, height = 50, margin = 10 },
@@ -86,8 +77,7 @@ local menu = jui.Box {
             aligny = jui.aligny.center,
             margin = { right = 20 },
             width = 300,
-            layout = jui.layout.linear,
-            linearDirection = jui.direction.down,
+            layout = jui.layout.linear { direction = jui.direction.down },
             -- offset = {x, y} -- manual override
             -- position = {x, y} -- even harder manual override, but you can use it with percentages
             children = {
