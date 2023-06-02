@@ -76,14 +76,11 @@ local menu = jui.Box {
             alignx = jui.alignx.right,
             aligny = jui.aligny.center,
             margin = { right = 20 },
-            width = 300,
             layout = jui.layout.linear { direction = jui.direction.down },
-            -- offset = {x, y} -- manual override
-            -- position = {x, y} -- even harder manual override, but you can use it with percentages
             children = {
-                jui.Box { id = "New Game", width = 200, height = 50, margin = 10, alignx = jui.alignx.right },
-                jui.Box { id = "Continue", width = 200, height = 50, margin = 10, alignx = jui.alignx.right },
-                jui.Box { id = "Exit", width = 200, height = 50, margin = 10, alignx = jui.alignx.right },
+                jui.Box { id = "New Game", width = jui.winPct(20), height = 50, margin = 10, alignx = jui.alignx.right },
+                jui.Box { id = "Continue", width = jui.winPct(20), height = 50, margin = 10, alignx = jui.alignx.right },
+                jui.Box { id = "Exit", width = jui.winPct(20), height = 50, margin = 10, alignx = jui.alignx.right },
             }
         }
     }

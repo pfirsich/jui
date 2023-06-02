@@ -355,6 +355,8 @@ function Box:calculateSizeAxis(axis)
     local parent = self:getParent()
     if type(size) == "number" then
         self._clipBox[sz] = size
+    elseif util.isUnit(size, "winPct") then
+        self._clipBox[sz] = util.round(jui.windowSize[axis] * size.value / 100)
     elseif util.isUnit(size, "pct") then
         assert(parent._clipBox[sz], "Child has pct size, but parent doesn't have a size") -- parent-determined
         self._clipBox[sz] = util.round(parent._clipBox[sz] * size.value / 100)
