@@ -33,7 +33,7 @@ local function getNextId()
 end
 
 function Box:initialize(params)
-    self.id = params.id or getNextId()
+    self.id = params.id or getNextId() -- this is not unique. Keep them unique yourself
     self.layout = params.layout or jui.layout.direct
     self.width = params.width or jui.size.fit
     self.height = params.height or jui.size.fit
@@ -51,6 +51,24 @@ function Box:initialize(params)
     end
 
     self._clipBox = nil
+end
+
+-- Finds the **first** child (depth first) that has a matching id.
+function Box:findChild(id)
+    for _, child in ipairs(self.children) do
+        if child.id == id then
+            return child
+        end
+        local found = child:findChild(id)
+        if found then
+            return found
+        end
+    end
+    return nil
+end
+
+function Box:getChild(index)
+    return self.children[index]
 end
 
 function Box:getClipBox()
