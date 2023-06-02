@@ -13,7 +13,7 @@ jui.backend.defaultConfig = {
 function jui.backend.init()
     jui.love.mesh = love.graphics.newMesh(jui.config.numVertices, "triangles", "stream")
     jui.love.defaultFont = love.graphics.getFont()
-    jui.windowSize.w, jui.windowSize.h = love.graphics.getDimensions()
+    jui.windowSize.x, jui.windowSize.y = love.graphics.getDimensions()
 end
 
 function jui.love.mousemoved(x, y, dx, dy)
@@ -195,7 +195,6 @@ end
 function jui.backend.getTextDimensions(font, text)
     return font:getWidth(text), font:getHeight()
 end
-
 
 function jui.backend.draw(commands)
     love.graphics.setColor(1, 1, 1, 1)

@@ -2,6 +2,7 @@ local requirePrefix = (...):match("(.+%.)[^%.]+$") or ""
 local class = require(requirePrefix .. "class")
 local draw = require(requirePrefix .. "draw")
 local jui = require(requirePrefix .. "jui")
+local util = require(requirePrefix .. "util")
 
 local Box = class("Box")
 
@@ -33,39 +34,59 @@ end
 
 function Box:initialize(params)
     self.id = params.id or getNextId()
+    self.layout = params.layout or jui.layout.direct
     self.width = params.width or jui.size.fit
     self.height = params.height or jui.size.fit
     self.hidden = params.hidden or false
     self.alignx = params.alignx or jui.alignx.left
     self.aligny = params.aligny or jui.aligny.top
     self.margin = parseLRTB(params.margin or {})
-    self.flowDirection = params.flowDirection or nil
+    self.linearDirection = params.linearDirection or nil
     self.spacing = params.spacing or jui.spacing.even
+    self.padding = parseLRTB(params.padding or {})
     self.children = params.children or {}
 
     for _, child in ipairs(self.children) do
         child.parent = self
     end
 
-    self._calculatedBox = {}
+    self._clipBox = nil
 end
 
-local cross = {
-    x = "y",
-    y = "x",
-    w = "h",
-    h = "w",
-}
+function Box:getClipBox()
+    assert(self_.clipBox)
+    return self._clipBox
+end
+
+function Box:getInnerBox()
+    assert(self_.clipBox)
+    return {
+        x = self._clipBox.x + padding.left,
+        y = self._clipBox.y + padding.top,
+        w = self._clipBox.w - padding.left - padding.right,
+        h = self._clipBox.h - padding.top - padding.bottom,
+    }
+end
+
+function Box:getOuterBox()
+    assert(self_.clipBox)
+    return {
+        x = self._clipBox.x - margin.left,
+        y = self._clipBox.y - margin.top,
+        w = self._clipBox.w + margin.left + margin.right,
+        h = self._clipBox.h + margin.top + margin.bottom,
+    }
+end
 
 local function dirToAxis(dir)
     if dir == jui.direction.left then
-        return "x", "w", -1
+        return "x", -1
     elseif dir == jui.direction.right then
-        return "x", "w", 1
+        return "x", 1
     elseif dir == jui.direction.up then
-        return "y", "h", -1
+        return "y", -1
     elseif dir == jui.direction.down then
-        return "y", "h", 1
+        return "y", 1
     end
 end
 
@@ -85,64 +106,9 @@ local function getMargins(margin, axis, dir)
     end
 end
 
-function Box:getChildrenSize()
-    if self.flowDirection then
-        local childrenSizeMain, childrenSizeCross = 0, 0
-        local mainAxis, mainAxisSize, dir, crossAxis = dirToAxis(self.flowDirection)
-        for i = 1, #self.children do
-            local child = self.children[i]
-            child:calculateSize()
-            local margin, _ = getMargins(child.margin, mainAxis, dir)
-            if i > 1 then
-                local _, prevEndMargin = getMargins(self.children[i - 1].margin, mainAxis, dir)
-                margin = math.max(margin, prevEndMargin)
-            end
-            childrenSizeMain = childrenSizeMain + child._calculatedBox[mainAxisSize] + margin
-
-            local crossMarginStart, crossMarginEnd = getMargins(child.margin, cross[mainAxis], dir)
-            childrenSizeCross = math.max(childrenSizeCross,
-                child._calculatedBox[cross[mainAxisSize]] + crossMarginStart + crossMarginEnd)
-        end
-
-        if #self.children > 0 then
-            local _, endMargin = getMargins(self.children[#self.children].margin, mainAxis, dir)
-            childrenSizeMain = childrenSizeMain + endMargin
-        end
-
-        if mainAxis == "x" then
-            return childrenSizeMain, childrenSizeCross
-        else
-            return childrenSizeCross, childrenSizeMain
-        end
-    else
-        -- TODO: Find the biggest box that can fit all children!
-        for _, child in ipairs(self.children) do
-            child:calculateSize()
-        end
-        assert(type(self.width) == "number" and type(self.height) == "number")
-        return self.width, self.height
-    end
-end
-
-function Box:calculateSize()
-    local childrenW, childrenH = self:getChildrenSize()
-
-    if self.width == jui.size.fit then
-        self._calculatedBox.w = childrenW
-    else
-        self._calculatedBox.w = self.width
-    end
-
-    if self.height == jui.size.fit then
-        self._calculatedBox.h = childrenH
-    else
-        self._calculatedBox.h = self.height
-    end
-end
-
 function Box:positionDirectly(parentX, parentY, parentW, parentH)
     local px, py, pw, ph = parentX, parentY, parentW, parentH
-    local w, h = self._calculatedBox.w, self._calculatedBox.h
+    local w, h = self._clipBox.w, self._clipBox.h
 
     local x = 0
     if self.alignx == jui.alignx.left then
@@ -162,14 +128,31 @@ function Box:positionDirectly(parentX, parentY, parentW, parentH)
         y = py + ph - h - self.margin.bottom
     end
 
-    self._calculatedBox.x, self._calculatedBox.y = x, y
+    self._clipBox.x, self._clipBox.y = x, y
 end
 
+local cross = {
+    x = "y",
+    y = "x",
+    w = "h",
+    h = "w",
+}
+
+local size = {
+    x = "w",
+    y = "h",
+}
+
+local sizeLong = {
+    x = "width",
+    y = "height",
+}
+
 function Box:positionChildren()
-    local selfX, selfY, selfW, selfH = self._calculatedBox.x, self._calculatedBox.y,
-                                       self._calculatedBox.w, self._calculatedBox.h
-    if self.flowDirection then
-        local mainAxis, mainAxisSize, dir = dirToAxis(self.flowDirection)
+    local selfX, selfY, selfW, selfH = self._clipBox.x, self._clipBox.y,
+                                       self._clipBox.w, self._clipBox.h
+    if self.linearDirection then
+        local mainAxis, dir = dirToAxis(self.linearDirection)
 
         -- We do this to position on the cross axis only
         for _, child in ipairs(self.children) do
@@ -179,7 +162,8 @@ function Box:positionChildren()
         local selfPos = mainAxis == "x" and selfX or selfY
         local selfSize = mainAxis == "x" and selfW or selfH
 
-        local childrenW, childrenH = self:getChildrenSize()
+        local childrenW = self:getChildrenSizeAxis("x", true)
+        local childrenH = self:getChildrenSizeAxis("y", true)
         local childrenSize = mainAxis == "x" and childrenW or childrenH
         local leftOverSize = selfSize - childrenSize
 
@@ -205,11 +189,11 @@ function Box:positionChildren()
             end
             cursor = cursor + dir * margin
             if dir < 0 then
-                child._calculatedBox[mainAxis] = cursor - child._calculatedBox[mainAxisSize]
+                child._clipBox[mainAxis] = cursor - child._clipBox[size[mainAxis]]
             else
-                child._calculatedBox[mainAxis] = cursor
+                child._clipBox[mainAxis] = cursor
             end
-            cursor = cursor + dir * child._calculatedBox[mainAxisSize]
+            cursor = cursor + dir * child._clipBox[size[mainAxis]]
             cursor = cursor + dir * childSpacing
         end
     else
@@ -223,20 +207,166 @@ function Box:positionChildren()
     end
 end
 
-function Box:draw(isChild)
-    if not isChild then
-        -- the sizes bubble up (ask the children)
-        self:calculateSize()
+function Box:getParent()
+    if self.parent then
+        return self.parent
+    else
+        local window = Box {id = "window"}
+        -- Need the child for 'fill', which does parent:getChildrenSize(), but we don't pass it to the constructor
+        -- because then self would have .parent = window.
+        window.children = {self}
+        window._clipBox = {x = 0, y = 0, w = jui.windowSize.x, h = jui.windowSize.y}
+        return window
+    end
+end
 
-        -- the positions trickle down (ask the parent)
-        self:positionDirectly(0, 0, jui.windowSize.x, jui.windowSize.y)
-        self:positionChildren()
+local function getFillWeight(size)
+    if size == jui.size.fill then
+        return 1
+    elseif util.isUnit(size, "fill") then
+        return size.value
+    else
+        return nil
+    end
+end
+
+local function isParentDetermined(size)
+    return util.isUnit(size, "pct") or isFill(size)
+end
+
+function Box:getChildrenSizeAxis(axis, includeFillChildren)
+    if self.layout == jui.layout.direct then
+        assert(false, "Not Implemented: boxes with dynamic size ('fill', 'fit') and layout 'direct'")
+        for _, child in ipairs(self.children) do
+            child:calculateSizeAxis(axis)
+        end
+        -- TODO: Find the biggest box that can fit all children!
+        assert(self.linearDirection or (type(self.width) == "number" and type(self.height) == "number"))
+        return self.width, self.height
+    elseif self.layout == jui.layout.linear then
+        local childrenSizeMain, childrenSizeCross = 0, 0
+        local mainAxis, dir = dirToAxis(self.linearDirection)
+        if axis == mainAxis then
+            local childrenSizeMain = 0
+
+            for i = 1, #self.children do
+                local child = self.children[i]
+                -- We have to include the margin even for children with fill, so the fillable space does not include them
+                local margin, _ = getMargins(child.margin, mainAxis, dir)
+                if i > 1 then
+                    local _, prevEndMargin = getMargins(self.children[i - 1].margin, mainAxis, dir)
+                    margin = math.max(margin, prevEndMargin)
+                end
+                childrenSizeMain = childrenSizeMain + margin
+                -- I am not sure if this is the right check, but for fill or fit, you want to skip fill children
+                if includeFillChildren or getFillWeight(child[sizeLong[axis]]) == nil then
+                    child:calculateSizeAxis(axis)
+                    childrenSizeMain = childrenSizeMain + child._clipBox[size[mainAxis]]
+                end
+            end
+
+            if #self.children > 0 then
+                local _, endMargin = getMargins(self.children[#self.children].margin, mainAxis, dir)
+                childrenSizeMain = childrenSizeMain + endMargin
+            end
+
+            return childrenSizeMain
+        else
+            local childrenSizeCross = 0
+
+            for i = 1, #self.children do
+                local child = self.children[i]
+                local crossMarginStart, crossMarginEnd = getMargins(child.margin, cross[mainAxis], dir)
+                local childSizeCross = crossMarginStart + crossMarginEnd
+                if includeFillChildren or getFillWeight(child[sizeLong[axis]]) == nil then
+                    child:calculateSizeAxis(axis)
+                    childSizeCross = childSizeCross + child._clipBox[size[cross[mainAxis]]]
+                end
+                childrenSizeCross = math.max(childrenSizeCross, childSizeCross)
+            end
+
+            return childrenSizeCross
+        end
+    elseif self.layout == jui.layout.grid then
+        assert(false, "Not Implemented: layout 'grid'")
+    end
+end
+
+function Box:resetLayout()
+    self._clipBox = nil
+    self._childFillSpace = nil
+
+    for _, child in ipairs(self.children) do
+        child:resetLayout()
+    end
+end
+
+function Box:getChildFillSpace(axis)
+    if self._childFillSpace then
+        return self._childFillSpace
     end
 
-    draw.debugBox(self._calculatedBox.x, self._calculatedBox.y,
-        self._calculatedBox.w, self._calculatedBox.h)
+    local weightSum = 0
+    for _, child in ipairs(self.children) do
+        local weight = getFillWeight(child[sizeLong[axis]])
+        if weight then
+            weightSum = weightSum + weight
+        end
+    end
+
+    assert(self._clipBox[size[axis]])
+    local childrenSize = self:getChildrenSizeAxis(axis, false)
+    self._childFillSpace = util.round((self._clipBox[size[axis]] - childrenSize) / weightSum)
+    return self._childFillSpace
+end
+
+function Box:calculateSizeAxis(axis)
+    local sz = size[axis]
+    if self._clipBox == nil then
+        self._clipBox = {}
+    end
+    if self._clipBox[sz] then
+        return
+    end
+
+    local size = axis == "x" and self.width or self.height
+    local parent = self:getParent()
+    if type(size) == "number" then
+        self._clipBox[sz] = size
+    elseif util.isUnit(size, "pct") then
+        assert(parent._clipBox[sz], "Child has pct size, but parent doesn't have a size") -- parent-determined
+        self._clipBox[sz] = util.round(parent._clipBox[sz] * size.value / 100)
+    elseif getFillWeight(size) then
+        assert(parent._clipBox[sz]) -- parent-determined
+        self._clipBox[sz] = parent:getChildFillSpace(axis) * getFillWeight(size)
+    elseif size == jui.size.fit then
+        self._clipBox[sz] = self:getChildrenSizeAxis(axis, true)
+    end
+end
+
+function Box:calculateSize()
+    self:calculateSizeAxis("x")
+    self:calculateSizeAxis("y")
+
+    for _, child in ipairs(self.children) do
+        child:calculateSize()
+    end
+end
+
+function Box:calculateLayout()
+    self:resetLayout()
+    self:calculateSize()
+
+    -- the positions trickle down (ask the parent)
+    self:positionDirectly(0, 0, jui.windowSize.x, jui.windowSize.y)
+    self:positionChildren()
+end
+
+function Box:draw(isChild)
+    draw.debugBox(self._clipBox.x, self._clipBox.y,
+        self._clipBox.w, self._clipBox.h)
     jui.backend.draw({
-        {type = "text", color = {1, 1, 1, 1}, text = self.id, x = self._calculatedBox.x, y = self._calculatedBox.y}
+        {type = "text", color = {1, 1, 1, 1}, text = self.id, x = self._clipBox.x, y = self._clipBox.y}
     })
 
     for _, child in ipairs(self.children) do

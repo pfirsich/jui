@@ -17,12 +17,15 @@ jui.windowSize = {}
 jui.alignx = util.enum("left", "center", "right")
 jui.aligny = util.enum("top", "center", "bottom")
 jui.direction = util.enum("left", "right", "up", "down")
-jui.size = util.enum("fit")
+jui.size = {
+    fit = "fit",
+    fill = util.unit("fill"),
+}
 jui.spacing = util.enum("around", "between", "even")
+jui.layout = util.enum("direct", "linear", "grid")
 
 jui.pct = util.unit("pct")
-jui.px = util.unit("px")
-jui.prop = util.unit("prop")
+jui.px = function(v) return v end
 
 jui.Box = require(requirePrefix .. "box")
 

@@ -21,4 +21,12 @@ function util.unit(name)
     end
 end
 
+function util.isUnit(value, name)
+    return type(value) == "table" and value.unit == name
+end
+
+function util.round(x)
+    return math.floor(x + 0.5)
+end
+
 return util
