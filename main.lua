@@ -25,6 +25,9 @@ local function selectExample(index)
             graphics = love.graphics,
         },
         require = require,
+        print = print,
+        table = table,
+        string = string,
     }
     setfenv(example.func, example.fenv)
     example.func()
