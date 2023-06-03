@@ -35,8 +35,13 @@ end
 function Box:initialize(params)
     self.id = params.id or getNextId() -- this is not unique. Keep them unique yourself
     self.layout = params.layout or jui.layout.direct
-    self.width = params.width or jui.size.fit
-    self.height = params.height or jui.size.fit
+    if params.children and #params.children > 0 then
+        self.width = params.width or jui.size.fit
+        self.height = params.height or jui.size.fit
+    else
+        self.width = params.width or jui.size.fill
+        self.height = params.height or jui.size.fill
+    end
     self.hidden = params.hidden or false
     self.alignx = params.alignx or jui.alignx.left
     self.aligny = params.aligny or jui.aligny.top
@@ -45,10 +50,33 @@ function Box:initialize(params)
     self.children = params.children or {}
 
     if self.layout.layoutType == jui.layoutType.linear then
-        self.layout.direction = self.layout.direction or nil -- mandatory
+        assert(self.layout.direction, "'direction' is mandatory for linear layout")
         self.layout.spacing = self.layout.spacing or jui.spacing.even
     elseif self.layout.layoutType == jui.layoutType.grid then
-        error("Layout type 'grid' not implemented yet")
+        assert(self.width ~= jui.size.fit and self.height ~= jui.size.fit)
+        assert(not util.isUnit(self.width, jui.size.fill) and not util.isUnit(self.height, jui.size.fill))
+        assert(self.layout.rows, "'rows' is mandatory for grid layout")
+        if type(self.layout.rows) == "number" then
+            self.layout.rows = util.repeatValue(1, self.layout.rows)
+        end
+        assert(self.layout.columns, "'columns' is mandatory for grid layout")
+        if type(self.layout.columns) == "number" then
+            self.layout.columns = util.repeatValue(1, self.layout.columns)
+        end
+        self.layout.rowGap = self.layout.rowGap or 0
+        self.layout.columnGap = self.layout.columnGap or 0
+    end
+
+    self.gridCell = params.gridCell
+    if self.gridCell then
+        assert(self.gridCell.row)
+        if type(self.gridCell.row) == "number" then
+            self.gridCell.row = {self.gridCell.row, self.gridCell.row}
+        end
+        assert(self.gridCell.column)
+        if type(self.gridCell.column) == "number" then
+            self.gridCell.column = {self.gridCell.column, self.gridCell.column}
+        end
     end
 
     for _, child in ipairs(self.children) do
@@ -219,6 +247,11 @@ function Box:positionChildren()
             cursor = cursor + dir * child._clipBox[size[mainAxis]]
             cursor = cursor + dir * childSpacing
         end
+    elseif self.layout.layoutType == jui.layoutType.grid then
+        for _, child in ipairs(self.children) do
+            child._clipBox.x = selfX + self._gridCellRanges.x[child.gridCell.column[1]].min
+            child._clipBox.y = selfY + self._gridCellRanges.y[child.gridCell.row[1]].min
+        end
     else
         for _, child in ipairs(self.children) do
             child:positionDirectly(selfX, selfY, selfW, selfH)
@@ -310,13 +343,14 @@ function Box:getChildrenSizeAxis(axis, includeFillChildren)
             return childrenSizeCross
         end
     elseif self.layout.layoutType == jui.layoutType.grid then
-        assert(false, "Not Implemented: layout 'grid'")
+        assert(false)
     end
 end
 
 function Box:resetLayout()
     self._clipBox = nil
     self._childFillSpace = nil
+    self._gridCellRanges = nil
 
     for _, child in ipairs(self.children) do
         child:resetLayout()
@@ -342,6 +376,28 @@ function Box:getChildFillSpace(axis)
     return self._childFillSpace
 end
 
+function Box:calculateGrid(axis)
+    assert(self.layout.layoutType == jui.layoutType.grid)
+    if self._gridCellRanges and self._gridCellRanges[axis] then
+        return
+    end
+    self._gridCellRanges = self._gridCellRanges or {}
+    self._gridCellRanges[axis] = {}
+    local cells = self.layout[axis == "x" and "rows" or "columns"]
+    local weightSum = 0
+    for i = 1, #cells do
+        weightSum = weightSum + cells[i]
+    end
+    local gapSize = self.layout[axis == "x" and "columnGap" or "rowGap"]
+    local noGapsSize = self._clipBox[size[axis]] - gapSize * (#cells - 1)
+    local cursor = 0
+    for i = 1, #cells do
+        local size = noGapsSize / weightSum * cells[i]
+        self._gridCellRanges[axis][i] = {min = cursor, max = cursor + size}
+        cursor = cursor + size + gapSize
+    end
+end
+
 function Box:calculateSizeAxis(axis)
     local sz = size[axis]
     if self._clipBox == nil then
@@ -351,20 +407,29 @@ function Box:calculateSizeAxis(axis)
         return
     end
 
-    local size = axis == "x" and self.width or self.height
     local parent = self:getParent()
-    if type(size) == "number" then
-        self._clipBox[sz] = size
-    elseif util.isUnit(size, "winPct") then
-        self._clipBox[sz] = util.round(jui.windowSize[axis] * size.value / 100)
-    elseif util.isUnit(size, "pct") then
-        assert(parent._clipBox[sz], "Child has pct size, but parent doesn't have a size") -- parent-determined
-        self._clipBox[sz] = util.round(parent._clipBox[sz] * size.value / 100)
-    elseif getFillWeight(size) then
-        assert(parent._clipBox[sz]) -- parent-determined
-        self._clipBox[sz] = parent:getChildFillSpace(axis) * getFillWeight(size)
-    elseif size == jui.size.fit then
-        self._clipBox[sz] = self:getChildrenSizeAxis(axis, true)
+
+    if parent.layout.layoutType == jui.layoutType.grid then
+        parent:calculateGrid(axis)
+        local cell = self.gridCell[axis == "x" and "column" or "row"]
+        self._clipBox[sz] = parent._gridCellRanges[axis][cell[2]].max - parent._gridCellRanges[axis][cell[1]].min
+    else
+        local size = axis == "x" and self.width or self.height
+        if type(size) == "number" then
+            self._clipBox[sz] = size
+        elseif util.isUnit(size, "vw") then
+            self._clipBox[sz] = util.round(jui.windowSize.x * size.value / 100)
+        elseif util.isUnit(size, "vh") then
+            self._clipBox[sz] = util.round(jui.windowSize.y * size.value / 100)
+        elseif util.isUnit(size, "pct") then
+            assert(parent._clipBox[sz], "Child has pct size, but parent doesn't have a size") -- parent-determined
+            self._clipBox[sz] = util.round(parent._clipBox[sz] * size.value / 100)
+        elseif getFillWeight(size) then
+            assert(parent._clipBox[sz]) -- parent-determined
+            self._clipBox[sz] = parent:getChildFillSpace(axis) * getFillWeight(size)
+        elseif size == jui.size.fit then
+            self._clipBox[sz] = self:getChildrenSizeAxis(axis, true)
+        end
     end
 end
 
@@ -392,6 +457,21 @@ function Box:draw(isChild)
     jui.backend.draw({
         {type = "text", color = {1, 1, 1, 1}, text = self.id, x = self._clipBox.x, y = self._clipBox.y}
     })
+
+    if self.layout.layoutType == jui.layoutType.grid then
+        for i = 1, #self.layout.rows do
+            local yMin = self._clipBox.y + self._gridCellRanges.y[i].min
+            love.graphics.line(self._clipBox.x, yMin, self._clipBox.x + self._clipBox.w, yMin)
+            local yMax = self._clipBox.y + self._gridCellRanges.y[i].max
+            love.graphics.line(self._clipBox.x, yMax, self._clipBox.x + self._clipBox.w, yMax)
+        end
+        for i = 1, #self.layout.columns do
+            local xMin = self._clipBox.x + self._gridCellRanges.x[i].min
+            love.graphics.line(xMin, self._clipBox.y, xMin, self._clipBox.y + self._clipBox.h)
+            local xMax = self._clipBox.x + self._gridCellRanges.x[i].max
+            love.graphics.line(xMax, self._clipBox.y, xMax, self._clipBox.y + self._clipBox.h)
+        end
+    end
 
     for _, child in ipairs(self.children) do
         child:draw(true)

@@ -36,4 +36,12 @@ function util.addValueWrapper(key, value)
     end
 end
 
+function util.repeatValue(value, num)
+    local ret = {}
+    for i = 1, num do
+        ret[i] = value
+    end
+    return ret
+end
+
 return util

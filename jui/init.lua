@@ -30,7 +30,8 @@ jui.layout = {
 }
 
 jui.pct = util.unit("pct")
-jui.winPct = util.unit("winPct")
+jui.vw = util.unit("vw")
+jui.vh = util.unit("vh")
 jui.px = function(v) return v end
 
 jui.Box = require(requirePrefix .. "box")

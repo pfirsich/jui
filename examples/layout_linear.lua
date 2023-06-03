@@ -78,9 +78,9 @@ local menu = jui.Box {
             margin = { right = 20 },
             layout = jui.layout.linear { direction = jui.direction.down },
             children = {
-                jui.Box { id = "New Game", width = jui.winPct(20), height = 50, margin = 10, alignx = jui.alignx.right },
-                jui.Box { id = "Continue", width = jui.winPct(20), height = 50, margin = 10, alignx = jui.alignx.right },
-                jui.Box { id = "Exit", width = jui.winPct(20), height = 50, margin = 10, alignx = jui.alignx.right },
+                jui.Box { id = "New Game", width = jui.vw(20), height = 50, margin = 10, alignx = jui.alignx.right },
+                jui.Box { id = "Continue", width = jui.vw(20), height = 50, margin = 10, alignx = jui.alignx.right },
+                jui.Box { id = "Exit", width = jui.vw(20), height = 50, margin = 10, alignx = jui.alignx.right },
             }
         }
     }
