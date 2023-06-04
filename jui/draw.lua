@@ -66,7 +66,7 @@ function draw.simpleBox(color, x, y, w, h)
     })
 end
 
-function draw.box(color, texture, x, y, w, h, cornerRadius)
+function draw.box(color, texture, x, y, w, h, cornerRadius, border)
     local r, g, b, a = unpack(color)
 
     cornerRadius = cornerRadius or {}
@@ -132,6 +132,21 @@ function draw.box(color, texture, x, y, w, h, cornerRadius)
     jui.backend.draw({
         {type = "geometry", texture = texture, vertices = vertices, indices = indices}
     })
+
+    if border then
+        local points = {}
+        for corner = 1, 4 do
+            local steps = radii[corner]
+            -- the round corners go in the wrong direction, so we have to reverse it
+            for i = lastCornerVert[corner], firstCornerVert[corner], -1 do
+                table.insert(points, vertices[i][1])
+                table.insert(points, vertices[i][2])
+            end
+        end
+        table.insert(points, points[1])
+        table.insert(points, points[2])
+        draw.line(border.color, border.width, points)
+    end
 end
 
 
@@ -153,6 +168,14 @@ function draw.alignText(text, color, alignx, aligny, x, y, w, h)
     jui.backend.draw({
         {type = "text", color = color, text = text, x = tx, y = ty}
     })
+end
+
+function draw.line(color, width, points)
+    -- TODO: Don't use löve here, but generate geometry!
+    -- https://wwwtyro.net/2019/11/18/instanced-lines.html
+    love.graphics.setColor(color)
+    love.graphics.setLineWidth(width)
+    love.graphics.line(points)
 end
 
 return draw

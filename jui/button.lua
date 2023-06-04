@@ -17,6 +17,8 @@ local defaultStyle = {
         borderRadiusTopRight = 10,
         borderRadiusBottomLeft = 10,
         borderRadiusBottomRight = 10,
+        borderColor = {0, 0, 0, 1},
+        borderWidth = 2,
     },
     {
         selector = {hovered = true},
@@ -94,7 +96,11 @@ function Button:drawElement()
         bottomRight = s.borderRadiusBottomRight,
         topRight = s.borderRadiusTopRight,
     }
-    draw.box(s.color, s.texture, self._clipBox.x, self._clipBox.y, self._clipBox.w, self._clipBox.h, rad)
+    local border = {
+        color = s.borderColor,
+        width = s.borderWidth,
+    }
+    draw.box(s.color, s.texture, self._clipBox.x, self._clipBox.y, self._clipBox.w, self._clipBox.h, rad, border)
     draw.alignText(self.label, s.textColor, self.textAlignx, self.textAligny,
         self._clipBox.x, self._clipBox.y, self._clipBox.w, self._clipBox.h)
 end
