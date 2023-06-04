@@ -45,13 +45,20 @@ function Button:initialize(params)
     self:registerHandler("mouseup", Button.onMouseUp)
 end
 
+function Button:contains(x, y)
+    if self._clipBox == nil then
+        return false
+    end
+    return x > self._clipBox.x and x < self._clipBox.x + self._clipBox.w
+        and y > self._clipBox.y and y < self._clipBox.y + self._clipBox.h
+end
+
 function Button:onMouseMove(event)
     if self._clipBox == nil then
         return
     end
     local hoveredBefore = self.hovered
-    self.hovered = event.x > self._clipBox.x and event.x < self._clipBox.x + self._clipBox.w
-        and event.y > self._clipBox.y and event.y < self._clipBox.y + self._clipBox.h
+    self.hovered = self:contains(event.x, event.y)
     if not hoveredBefore and self.hovered then
         self:onEnter()
     elseif hoveredBefore and not self.hovered then

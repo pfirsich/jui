@@ -114,12 +114,16 @@ function Box:onWindowResized(event)
 end
 
 function Box:getClipBox()
-    assert(self_.clipBox)
+    if self._clipBox == nil then
+        return nil
+    end
     return self._clipBox
 end
 
 function Box:getInnerBox()
-    assert(self_.clipBox)
+    if self._clipBox == nil then
+        return nil
+    end
     return {
         x = self._clipBox.x + padding.left,
         y = self._clipBox.y + padding.top,
@@ -129,7 +133,9 @@ function Box:getInnerBox()
 end
 
 function Box:getOuterBox()
-    assert(self_.clipBox)
+    if self._clipBox == nil then
+        return nil
+    end
     return {
         x = self._clipBox.x - margin.left,
         y = self._clipBox.y - margin.top,
