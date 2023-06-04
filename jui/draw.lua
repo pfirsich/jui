@@ -49,7 +49,7 @@ function draw.newFrame()
     nextColorIndex = 1
 end
 
-function draw.box(x, y, w, h, color)
+function draw.simpleBox(color, x, y, w, h)
     local r, g, b, a = unpack(color)
     local vertices = {
         {x,     y,       0, 0,   r, g, b, a},
@@ -66,8 +66,77 @@ function draw.box(x, y, w, h, color)
     })
 end
 
+function draw.box(color, texture, x, y, w, h, cornerRadius)
+    local r, g, b, a = unpack(color)
+
+    cornerRadius = cornerRadius or {}
+    local rtl = cornerRadius.topLeft or 0
+    local rtr = cornerRadius.topRight or 0
+    local rbl = cornerRadius.bottomLeft or 0
+    local rbr = cornerRadius.bottomRight or 0
+    local radii = {rtl, rbl, rbr, rtr}
+
+    local vertices = {}
+    local function vert(vx, vy)
+        table.insert(vertices, {vx, vy,    (vx - x) / w, (vy - y) / h,    r, g, b, a})
+        return #vertices
+    end
+
+    local indices = {}
+    local function tri(i, j, k)
+        table.insert(indices, i)
+        table.insert(indices, j)
+        table.insert(indices, k)
+    end
+
+    -- center quad
+    local ctl = vert(x     + rtl, y     + rtl)
+    local cbl = vert(x     + rbl, y + h - rbl)
+    local cbr = vert(x + w - rbr, y + h - rbr)
+    local ctr = vert(x + w - rtr, y     + rtr)
+
+    tri(ctl, cbl, cbr)
+    tri(ctl, cbr, ctr)
+
+    -- corners
+    local firstCornerVert = {}
+    local lastCornerVert = {}
+    for corner = 1, 4 do
+        local steps = radii[corner]
+        local angle = math.pi + (corner - 1) * math.pi * 1.5
+        firstCornerVert[corner] = steps > 0 and #vertices + 1 or corner
+        for i = 0, steps do
+            local base = vertices[corner]
+            local v = vert(
+                base[1] + math.cos(angle) * radii[corner],
+                base[2] + math.sin(angle) * radii[corner]
+            )
+            angle = angle + math.pi * 0.5 / steps
+            if i > 0 then
+                tri(corner, v, v - 1)
+            end
+        end
+        lastCornerVert[corner] = steps > 0 and #vertices or corner
+    end
+
+    -- edge quads
+    for corner = 1, 4 do
+        local nextCorner = corner + 1
+        if nextCorner > 4 then
+            nextCorner = 1
+        end
+        tri(firstCornerVert[corner], lastCornerVert[nextCorner], nextCorner)
+        tri(firstCornerVert[corner], nextCorner, corner)
+    end
+
+    jui.backend.draw({
+        {type = "geometry", texture = texture, vertices = vertices, indices = indices}
+    })
+end
+
+
 function draw.debugBox(x, y, w, h)
-    draw.box(x, y, w, h, getNextColor())
+    draw.simpleBox(getNextColor(), x, y, w, h)
 end
 
 function draw.alignText(text, color, alignx, aligny, x, y, w, h)

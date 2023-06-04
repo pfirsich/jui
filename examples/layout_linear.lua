@@ -1,6 +1,5 @@
-local jui = require("jui.love").init()
+local jui = require("jui.love").init({debugDraw = true})
 
--- A box without a parent has a virtual box the size of the whole window as its parent
 local menu = jui.Box {
     id = "root",
     width = jui.pct(100),

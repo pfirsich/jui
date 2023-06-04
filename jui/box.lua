@@ -482,11 +482,29 @@ function Box:send(event)
 end
 
 function Box:drawElement()
-    draw.debugBox(self._clipBox.x, self._clipBox.y,
+    if jui.config.debugDraw then
+        draw.debugBox(self._clipBox.x, self._clipBox.y,
         self._clipBox.w, self._clipBox.h)
-    jui.backend.draw({
-        {type = "text", color = {1, 1, 1, 1}, text = self.id, x = self._clipBox.x, y = self._clipBox.y}
-    })
+        jui.backend.draw({
+            {type = "text", color = {1, 1, 1, 1}, text = self.id, x = self._clipBox.x, y = self._clipBox.y}
+        })
+
+        if self.layout.layoutType == jui.layoutType.grid then
+            -- TODO: Use draw.line as soon as I have it
+            for i = 1, #self.layout.rows do
+                local yMin = self._clipBox.y + self._gridCellRanges.y[i].min
+                love.graphics.line(self._clipBox.x, yMin, self._clipBox.x + self._clipBox.w, yMin)
+                local yMax = self._clipBox.y + self._gridCellRanges.y[i].max
+                love.graphics.line(self._clipBox.x, yMax, self._clipBox.x + self._clipBox.w, yMax)
+            end
+            for i = 1, #self.layout.columns do
+                local xMin = self._clipBox.x + self._gridCellRanges.x[i].min
+                love.graphics.line(xMin, self._clipBox.y, xMin, self._clipBox.y + self._clipBox.h)
+                local xMax = self._clipBox.x + self._gridCellRanges.x[i].max
+                love.graphics.line(xMax, self._clipBox.y, xMax, self._clipBox.y + self._clipBox.h)
+            end
+        end
+    end
 end
 
 function Box:draw()
@@ -495,21 +513,6 @@ function Box:draw()
     end
 
     self:drawElement()
-
-    if self.layout.layoutType == jui.layoutType.grid then
-        for i = 1, #self.layout.rows do
-            local yMin = self._clipBox.y + self._gridCellRanges.y[i].min
-            love.graphics.line(self._clipBox.x, yMin, self._clipBox.x + self._clipBox.w, yMin)
-            local yMax = self._clipBox.y + self._gridCellRanges.y[i].max
-            love.graphics.line(self._clipBox.x, yMax, self._clipBox.x + self._clipBox.w, yMax)
-        end
-        for i = 1, #self.layout.columns do
-            local xMin = self._clipBox.x + self._gridCellRanges.x[i].min
-            love.graphics.line(xMin, self._clipBox.y, xMin, self._clipBox.y + self._clipBox.h)
-            local xMax = self._clipBox.x + self._gridCellRanges.x[i].max
-            love.graphics.line(xMax, self._clipBox.y, xMax, self._clipBox.y + self._clipBox.h)
-        end
-    end
 
     for _, child in ipairs(self.children) do
         child:draw(true)

@@ -1,7 +1,6 @@
 local jui = require("jui.love").init()
 local draw = require("jui.draw")
 
--- A box without a parent has a virtual box the size of the whole window as its parent
 jui.Button.defaultProperties = {onActivate = function(button) print(button.label) end}
 local menu = jui.Button {
     label = "Button",
