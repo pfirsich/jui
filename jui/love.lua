@@ -12,16 +12,8 @@ jui.backend.defaultConfig = {
 
 function jui.backend.init()
     jui.love.mesh = love.graphics.newMesh(jui.config.numVertices, "triangles", "stream")
-    jui.love.defaultFont = love.graphics.getFont()
+    jui.love.defaultFont = jui.config.defaultFont or love.graphics.getFont()
     jui.windowSize.x, jui.windowSize.y = love.graphics.getDimensions()
-end
-
-function jui.love.mousemoved(x, y, dx, dy)
-    jui.emitEvent("mousemove", x, y, dx, dy)
-end
-
-function jui.love.wheelmoved(x, y)
-    jui.emitEvent("mousewheel", x, y)
 end
 
 local mouseButtonMap = {
@@ -29,14 +21,6 @@ local mouseButtonMap = {
     "right",
     "middle",
 }
-
-function jui.love.mousepressed(x, y, button)
-    jui.emitEvent("mousedown", mouseButtonMap[button])
-end
-
-function jui.love.mousereleased(x, y, button)
-    jui.emitEvent("mouseup", mouseButtonMap[button])
-end
 
 local function makeKeyMap(keys)
     local map = {}
@@ -49,46 +33,63 @@ end
 -- TODO: the whole thing
 local keyMap = makeKeyMap { "left", "right", "up", "down", "return", "escape", "delete", "backspace", "space" }
 
-function jui.love.keypressed(key)
-    jui.emitEvent("keydown", keyMap[key])
-end
-
-function jui.love.keyreleased(key)
-    jui.emitEvent("keyup", keyMap[key])
-end
-
 jui.love.gamepadConfig = {
     buttons = {
-        ["a"] = "confirm",
-        ["x"] = "back",
+        ["a"] = "activate",
+        ["b"] = "back",
     },
     moveXAxis = "leftx",
     moveYAxis = "lefty",
     deadzone = 0.2,
 }
 
-function jui.love.gamepadpressed(joystick, button)
-    local b = jui.love.gamepadConfig.buttons[button]
-    if b then
-        jui.emitEvent("controllerdown", joystick, b)
-    end
-end
-
-function jui.love.gamepadreleased(joystick, button)
-    local b = jui.love.gamepadConfig.buttons[button]
-    if b then
-        jui.emitEvent("controllerup", joystick, b)
-    end
-end
-
-function jui.love.gamepadaxis(joystick, axis, value)
-    if math.abs(value) < jui.love.gamepadConfig.deadzone then
-        value = 0
-    end
-    if axis == jui.love.gamepadConfig.moveXAxis then
-        jui.emitEvent("controllermove", "x", value)
-    elseif axis == jui.love.gamepadConfig.moveYAxis then
-        jui.emitEvent("controllermove", "y", value)
+function jui.love.convertEvent(name, ...)
+    if name == "mousemoved" then
+        local x, y, dx, dy = ...
+        return {name = "mousemove", x = x, y = y, dx = dx, dy = dy}
+    elseif name == "mousewheel" then
+        local x, y = ...
+        return {name = "mousewheel", x = x, y = y}
+    elseif name == "mousepressed" then
+        local x, y, button = ...
+        return {name = "mousedown", button = mouseButtonMap[button]}
+    elseif name == "mousereleased" then
+        local x, y, button = ...
+        return {name = "mouseup", button = mouseButtonMap[button]}
+    elseif name == "keypressed" then
+        local key = ...
+        return {name = "keydown", key = keyMap[key]}
+    elseif name == "keyreleased" then
+        local key = ...
+        return {name = "keyup", key = keyMap[key]}
+    elseif name == "gamepadpressed" then
+        local joystick, button = ...
+        local b = jui.love.gamepadConfig.buttons[button]
+        if b then
+            return {name = "controllerdown", joystick = joystick, button = b}
+        end
+    elseif name == "gamepadreleased" then
+        local joystick, button = ...
+        local b = jui.love.gamepadConfig.buttons[button]
+        if b then
+            return {name = "controllerup", joystick = joystick, button = b}
+        end
+    elseif name == "gamepadaxis" then
+        local joystick, axis, value = ...
+        if math.abs(value) < jui.love.gamepadConfig.deadzone then
+            value = 0
+        end
+        if axis == jui.love.gamepadConfig.moveXAxis then
+            return {name = "controllermove", axis = "x", value = value}
+        elseif axis == jui.love.gamepadConfig.moveYAxis then
+            return {name = "controllermove", axis = "y", value = value}
+        end
+    elseif name == "focus" then
+        local focus = ...
+        return {name = "focus", focus = focus}
+    elseif name == "windowresized" then
+        local width, height = ...
+        return {name = "windowresized", width = width, height = height}
     end
 end
 
@@ -173,26 +174,23 @@ function jui.backend.update()
     end
 end
 
-function jui.love.focus(focus)
-    jui.emitEvent("focus", focus)
-end
-
-function jui.love.resize(width, height)
-    jui.emitEvent("windowresized", width, height)
-end
-
 function jui.backend.setClipboardText(text)
     love.system.setClipboardText(text)
 end
 
 function jui.backend.getClipboardText(text)
-    love.system.getClipboardText(text)
+    return love.system.getClipboardText(text)
+end
+
+function jui.backend.getWindowDimensions()
+    return love.graphics.getDimensions()
 end
 
 function jui.backend.newFrame()
 end
 
 function jui.backend.getTextDimensions(font, text)
+    font = font or jui.love.defaultFont
     return font:getWidth(text), font:getHeight()
 end
 

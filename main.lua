@@ -60,7 +60,7 @@ function love.load()
         table.insert(examples, example)
     end
 
-    selectExample("layout_linear.lua")
+    selectExample("layout_grid.lua")
 end
 
 function love.keypressed(key, ...)

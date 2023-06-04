@@ -1,5 +1,6 @@
 local requirePrefix = (...):match("(.+%.)[^%.]+$") or ""
 local jui = require(requirePrefix .. "jui")
+local util = require(requirePrefix .. "util")
 
 local draw = {}
 
@@ -48,8 +49,8 @@ function draw.newFrame()
     nextColorIndex = 1
 end
 
-function draw.debugBox(x, y, w, h)
-    local r, g, b, a = unpack(getNextColor())
+function draw.box(x, y, w, h, color)
+    local r, g, b, a = unpack(color)
     local vertices = {
         {x,     y,       0, 0,   r, g, b, a},
         {x,     y + h,   0, 1,   r, g, b, a},
@@ -62,6 +63,26 @@ function draw.debugBox(x, y, w, h)
     }
     jui.backend.draw({
         {type = "geometry", texture = nil, vertices = vertices, indices = indices}
+    })
+end
+
+function draw.debugBox(x, y, w, h)
+    draw.box(x, y, w, h, getNextColor())
+end
+
+function draw.alignText(text, color, alignx, aligny, x, y, w, h)
+    local tw, th = jui.backend.getTextDimensions(nil, text)
+    local tx, ty = x, y
+    if alignx == jui.alignx.center then
+        tx = x + w/2 - tw/2
+    end
+    if aligny == jui.aligny.center then
+        ty = y + h/2 - th/2
+    end
+    tx = util.round(tx)
+    ty = util.round(ty)
+    jui.backend.draw({
+        {type = "text", color = color, text = text, x = tx, y = ty}
     })
 end
 

@@ -14,9 +14,9 @@ local menu = jui.Box {
             margin = 20,
             layout = jui.layout.linear { direction = jui.direction.right },
             children = {
-                jui.Box { id = "New Game", width = 200, height = 50, margin = 10, aligny = jui.aligny.top },
-                jui.Box { id = "Continue", width = 200, height = 50, margin = 10, aligny = jui.aligny.center },
-                jui.Box { id = "Exit", width = 200, height = 50, margin = 10, aligny = jui.aligny.bottom },
+                jui.Button { label = "New Game", width = 200, height = 50, margin = 10, aligny = jui.aligny.top },
+                jui.Button { label = "Continue", width = 200, height = 50, margin = 10, aligny = jui.aligny.center },
+                jui.Button { label = "Exit", width = 200, height = 50, margin = 10, aligny = jui.aligny.bottom },
             }
         },
         jui.Box {
@@ -27,9 +27,9 @@ local menu = jui.Box {
             margin = { bottom = 260 },
             layout = jui.layout.linear { direction = jui.direction.left, spacing = jui.spacing.even },
             children = {
-                jui.Box { id = "New Game", width = jui.size.fill(2), height = 50, margin = 10 },
-                jui.Box { id = "Continue", width = jui.size.fill, height = 50, margin = 10 },
-                jui.Box { id = "Exit", width = jui.size.fill, height = 50, margin = 10 },
+                jui.Button { label = "New Game", width = jui.size.fill(2), height = 50, margin = 10 },
+                jui.Button { label = "Continue", width = jui.size.fill, height = 50, margin = 10 },
+                jui.Button { label = "Exit", width = jui.size.fill, height = 50, margin = 10 },
             }
         },
         jui.Box {
@@ -40,9 +40,9 @@ local menu = jui.Box {
             margin = { bottom = 180 },
             layout = jui.layout.linear { direction = jui.direction.left, spacing = jui.spacing.even },
             children = {
-                jui.Box { id = "New Game", width = 200, height = 50, margin = 10 },
-                jui.Box { id = "Continue", width = 200, height = 50, margin = 10 },
-                jui.Box { id = "Exit", width = 200, height = 50, margin = 10 },
+                jui.Button { label = "New Game", width = 200, height = 50, margin = 10 },
+                jui.Button { label = "Continue", width = 200, height = 50, margin = 10 },
+                jui.Button { label = "Exit", width = 200, height = 50, margin = 10 },
             }
         },
         jui.Box {
@@ -53,9 +53,9 @@ local menu = jui.Box {
             margin = { bottom = 100 },
             layout = jui.layout.linear { direction = jui.direction.left, spacing = jui.spacing.around },
             children = {
-                jui.Box { id = "New Game", width = 200, height = 50, margin = 10 },
-                jui.Box { id = "Continue", width = 200, height = 50, margin = 10 },
-                jui.Box { id = "Exit", width = 200, height = 50, margin = 10 },
+                jui.Button { label = "New Game", width = 200, height = 50, margin = 10 },
+                jui.Button { label = "Continue", width = 200, height = 50, margin = 10 },
+                jui.Button { label = "Exit", width = 200, height = 50, margin = 10 },
             }
         },
         jui.Box {
@@ -66,9 +66,9 @@ local menu = jui.Box {
             margin = { bottom = 20 },
             layout = jui.layout.linear { direction = jui.direction.left, spacing = jui.spacing.between },
             children = {
-                jui.Box { id = "New Game", width = 200, height = 50, margin = 10 },
-                jui.Box { id = "Continue", width = 200, height = 50, margin = 10 },
-                jui.Box { id = "Exit", width = 200, height = 50, margin = 10 },
+                jui.Button { label = "New Game", width = 200, height = 50, margin = 10 },
+                jui.Button { label = "Continue", width = 200, height = 50, margin = 10 },
+                jui.Button { label = "Exit", width = 200, height = 50, margin = 10 },
             }
         },
         jui.Box {
@@ -78,18 +78,28 @@ local menu = jui.Box {
             margin = { right = 20 },
             layout = jui.layout.linear { direction = jui.direction.down },
             children = {
-                jui.Box { id = "New Game", width = jui.vw(20), height = 50, margin = 10, alignx = jui.alignx.right },
-                jui.Box { id = "Continue", width = jui.vw(20), height = 50, margin = 10, alignx = jui.alignx.right },
-                jui.Box { id = "Exit", width = jui.vw(20), height = 50, margin = 10, alignx = jui.alignx.right },
+                jui.Button { label = "New Game", width = jui.vw(20), height = 50, margin = 10, alignx = jui.alignx.right },
+                jui.Button { label = "Continue", width = jui.vw(20), height = 50, margin = 10, alignx = jui.alignx.right },
+                jui.Button { label = "Exit", width = jui.vw(20), height = 50, margin = 10, alignx = jui.alignx.right },
             }
         }
     }
 }
 
-function love.update(dt)
-    jui.update()
-    menu:calculateLayout()
-    --menu:update(love.timer.getTime())
+function love.mousemoved(x, y, dx, dy)
+    menu:send(jui.love.convertEvent("mousemoved", x, y, dx, dy))
+end
+
+function love.mousepressed(x, y, button)
+    menu:send(jui.love.convertEvent("mousepressed", x, y, button))
+end
+
+function love.mousereleased(x, y, button)
+    menu:send(jui.love.convertEvent("mousereleased", x, y, button))
+end
+
+function love.resized(width, height)
+    menu:send(jui.love.convertEvent("windowresized", width, height))
 end
 
 function love.draw()

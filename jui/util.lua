@@ -6,6 +6,12 @@ function util.updateTable(a, b)
     end
 end
 
+function util.append(a, b)
+    for i = 1, #b do
+        table.insert(a, b[i])
+    end
+end
+
 function util.enum(...)
     local enum = {}
     local values = {...}
@@ -42,6 +48,17 @@ function util.repeatValue(value, num)
         ret[i] = value
     end
     return ret
+end
+
+function util.nop()
+end
+
+function util.addFallback(tbl, fallback)
+    for k, v in pairs(fallback) do
+        if tbl[k] == nil then
+            tbl[k] = v
+        end
+    end
 end
 
 return util

@@ -33,6 +33,7 @@ local function getNextId()
 end
 
 function Box:initialize(params)
+    util.addFallback(params, Box.defaultProperties or {})
     self.id = params.id or getNextId() -- this is not unique. Keep them unique yourself
     self.layout = params.layout or jui.layout.direct
     if params.children and #params.children > 0 then
@@ -83,7 +84,8 @@ function Box:initialize(params)
         child.parent = self
     end
 
-    self._clipBox = nil
+    self.eventHandlers = {}
+    self:registerHandler("windowresized", Box.onWindowResized)
 end
 
 -- Finds the **first** child (depth first) that has a matching id.
@@ -102,6 +104,13 @@ end
 
 function Box:getChild(index)
     return self.children[index]
+end
+
+function Box:onWindowResized(event)
+    jui.windowSize.x, jui.windowSize.y = event.width, event.height
+    if self.parent == nil then
+        self:calculateLayout()
+    end
 end
 
 function Box:getClipBox()
@@ -446,17 +455,40 @@ function Box:calculateLayout()
     self:resetLayout()
     self:calculateSize()
 
-    -- the positions trickle down (ask the parent)
     self:positionDirectly(0, 0, jui.windowSize.x, jui.windowSize.y)
     self:positionChildren()
 end
 
-function Box:draw(isChild)
+function Box:registerHandler(eventName, handler)
+    if self.eventHandlers[eventName] == nil then
+        self.eventHandlers[eventName] = {}
+    end
+    table.insert(self.eventHandlers[eventName], handler)
+end
+
+function Box:send(event)
+    for _, handler in ipairs(self.eventHandlers[event.name] or {}) do
+        handler(self, event)
+    end
+    for _, child in ipairs(self.children) do
+        child:send(event)
+    end
+end
+
+function Box:drawElement()
     draw.debugBox(self._clipBox.x, self._clipBox.y,
         self._clipBox.w, self._clipBox.h)
     jui.backend.draw({
         {type = "text", color = {1, 1, 1, 1}, text = self.id, x = self._clipBox.x, y = self._clipBox.y}
     })
+end
+
+function Box:draw()
+    if self._clipBox == nil then
+        self:calculateLayout()
+    end
+
+    self:drawElement()
 
     if self.layout.layoutType == jui.layoutType.grid then
         for i = 1, #self.layout.rows do

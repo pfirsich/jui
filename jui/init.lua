@@ -14,6 +14,20 @@ jui.inputState = {
 }
 jui.windowSize = {}
 
+jui.inputConfig = {
+    mouse = {
+        buttons = {left = true},
+        edge = "up"
+    },
+    keyboard = {
+        left = "left",
+        right = "right",
+        up = "up",
+        down = "down",
+        activate = "return",
+    },
+}
+
 jui.alignx = util.enum("left", "center", "right")
 jui.aligny = util.enum("top", "center", "bottom")
 jui.direction = util.enum("left", "right", "up", "down")
@@ -35,6 +49,7 @@ jui.vh = util.unit("vh")
 jui.px = function(v) return v end
 
 jui.Box = require(requirePrefix .. "box")
+jui.Button = require(requirePrefix .. "button")
 
 local defaultConfig = {
     numVertices = 4096,
@@ -52,16 +67,6 @@ function jui.init(config)
     end
     jui.backend.init()
     return jui
-end
-
-function jui.emitEvent(event, ...)
-    local args = {...}
-    if event == "windowresized" then
-        jui.windowSize.x = args[1]
-        jui.windowSize.y = args[2]
-    end
-    --print(event, inspect(args))
-    --table.insert(jui.eventQueue, {event = event, args = args})
 end
 
 function jui.update()
